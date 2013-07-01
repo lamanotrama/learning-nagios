@@ -140,8 +140,8 @@ sudo yum install nagios
 全オブジェクトに共通する性質として、こいつらはinheritableです。
 
 * テンプレートオブジェクト
-  * registerアトリビュートを0にすると、それ自体は単にひな形となる
-* 子のuseアトリビュートでテンプレートオブジェクトを指定して継承
+  * `register`アトリビュートを0にすると、それ自体は単にひな形となる
+* 子の`use`アトリビュートでテンプレートオブジェクトを指定して継承
   * 継承を連鎖させる(孫を作る)こともできるけどおすすめしない。むしろすんな
   * staging用サーバとかでちょい変えることはある
 * 子は親のアトリビュートの値を継承し、全て上書き可能
@@ -194,7 +194,7 @@ hostとgroupの関係は`host has many hostgroup`です。
 
 hostgroups.cfgも一部のサービスでは自動生成してます。
 
-#### serviec
+#### service
 
 監視項目です。
 
@@ -205,7 +205,7 @@ service_descriptionはアラートに表示される(例えばメールのsubjec
 
 監視対象はhostもしくはhostgroup(それぞれ復数可)、またはその二つの組み合わせで指定可能ですが、大抵はhostgroupだけでなんとかなります。hostをだらだら並べるような設定はクソなことがおおいです。
 
-servieオブジェクトは(他のobjectの`*_name`と違い)下記の2つのアトリビュートの組み合わせで一意であればOKです。
+serviceオブジェクトは(他のobjectの`*_name`と違い)下記の2つのアトリビュートの組み合わせで一意であればOKです。
 
 * `service_description`
 * `host[group]_name`
@@ -225,26 +225,27 @@ servieオブジェクトは(他のobjectの`*_name`と違い)下記の2つのア
 
 監視の手段とその名前を定義します。
 
-commnad名(`name`)はserviceオブジェクトの`check_command`で指定され、serviceをどのcommandでチェックするのか、という関係を作ります。
+commnad名(`command_name`)はserviceオブジェクトの`check_command`アトリビュートで指定され、serviceをどのcommandでチェックするのか、という関係を作ります。
 
 `command_line`に実際に実行するコマンドを書きます。
 コマンドのexit codeでステータス(OK|WARN|CRIT)を判別するので、コマンドワンライナーでもなんでもいいんですが、普通はnagiosプラグインを使います。
 
 serviceオブジェクトでcommandを指定する際には、任意個の引数も渡せる為、上手くcommnadを定義すれば、新規でやたらと定義を追加するってことを避けれます。
 
-設定に出てくる$USER1$ってのはマクロです。pluginの入ったpathが入ってます。下記は使用頻度の高いマクロの一部です。
+設定に出てくる`$USER1$`ってのはマクロです。pluginの入ったpathが入ってます。下記は使用頻度の高いマクロの一部です。
 
 * `$ARGN$`
 * `$HOSTNAME$`
 * `$HOSTADDRESS$`
 
 他にも[一杯あります](http://nagios.sourceforge.net/docs/3_0/macrolist.html)。
-ARGはserviceオブジェクトで渡される引数で、それを更にプラグインへオプション引数として渡すときに使います。
+ARGはserviceオブジェクトから渡される引数で、それを更にプラグインへオプション引数として渡すときに使います。
 あとの2つもプラグインへの引数としてどちらかをほぼ必ず使います。HOSTADDRESSよりはHOSTNAMEを使った方がベターです。HOSTNAMEを使うことで、名前引きのチェックにもなります。
 
 #### nrpe
 
 command(のcommand_line)で`check_nrpe`というnagiosプラグインを使った監視は、他とはちょと違ってserver - agent型で動きます。対象ホスト上で実行しないと、結果が得られない(得にくい)監視をするのに使います。
+
 例えば、メモリの残量なんかはリモートホスト上でfree叩くとか、/proc/meminfoを覗かないとわかんないですよね(snmpという手段もあるけど、あれ俺好きじゃない)。
 
 check_nrpeの引数で、対象ホストの`nrpe.cfg`で定義されているコマンドを指定します。実行結果(exit code)は普通のチェックコマンドと同様に解釈されます。また、コマンドだけでなく、引数もエージェントに渡すことが可能です。
@@ -264,7 +265,7 @@ nrpe.cfg側
 command[check_mem]=/usr/lib64/nagios/plugins/check_mem -f -w $ARG1$ -c $ARG2$
 ```
 
-command定義の方で、serrvice定義から受け取った閾値を、今度はcheck_nrpeに渡してします。それが最終的にnrpeのcommandとして定義されたcheck_memに渡されて実行されます。
+commandオブジェクトの方で、serrviceオブジェクトから受け取った閾値を、今度はcheck_nrpeに渡してします。それが最終的にnrpeのcommandとして定義されたcheck_memに渡されて実行されます。
 このように、nrpeを使った監視でも引数を上手く使うことで、設定をコンパクトに保つことができます。
 
 
@@ -276,7 +277,7 @@ RPMで入る標準pluginはここにあります。
 /usr/lib[64]/nagios/plugins/
 ```
 
-ここに無いものは`yum search nagios-plugins`したり、[Nagios Exchange](http://exchange.nagios.org/)で適当なキーワードで検索したりして、適当なのが無いか探します。
+ここに無いものは`yum search nagios-plugins`したり、[Nagios Exchange](http://exchange.nagios.org/)で適当なキーワードで検索したりして、それっぽいのが無いか探します。
 
 それでも無かったら、自作。
 ペパボで自前で作ったやつはここに集めてます。
@@ -309,7 +310,9 @@ https://github.com/paperboy-all/nagios-plugins
 特定ホストのservice全部を対象にすることも可能です。やり方は適当にその辺のインフラの人に聞いてください。
 
 似た機能で`Disable notifications`ってのがありますが、こっちは **よほどの事が無い限りポチらないでください**。
-Schedule downtimeは時間がたてば勝手に解除されますが、こちらはそれがありません。手動で解除するしかないです。なので、「メンテ前にポチってやってメンテ終わったけど解除忘れてた。」場合に、後日本当に障害が起きてもそのホストは気づかれることなく放置されてしまいます(昔実際にあった)。
+Schedule downtimeは時間がたてば勝手に解除されますが、こちらはそれがありません。手動で解除するしかないです。
+
+その為「メンテ前にポチってやってメンテ終わったけど解除忘れてた。」なおっちょこちょいをすると、後日本当に障害が起きてもそのホストは気づかれることなく放置されてしまいます(昔実際にあった)。
 
 #### ホスト検索
 
