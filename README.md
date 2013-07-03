@@ -62,7 +62,7 @@ nagiosってなんすか?
 
 ### アーキテクチャ
 
-図を入れる
+![nagios](images/nagios.png)
 
 ----
 
