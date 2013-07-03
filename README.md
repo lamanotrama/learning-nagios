@@ -75,7 +75,8 @@ nagiosってなんすか?
 
 とりあえずコレを開いて置いてください。
 
-[基盤チームが使っているnagiosの設定](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/files/etc/nagios/objects/kiban) [こっちも](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/templates/etc/nagios/objects/kiban)
+* [基盤チームが使っているnagiosの設定](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/files/etc/nagios/objects/kiban)
+* [こっちも](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/templates/etc/nagios/objects/kiban)
 
 あと自分のvm(port 80空いてるやつ)でnagiosをインストールしておいてください。
 
@@ -90,7 +91,7 @@ sudo yum install nagios
 * Nagios自体の設定(フレームワークとしての設定)
 * 監視項目の設定(誰の何をどう監視するのか)
 
-### Naigos自体の設定
+### Nagios自体の設定
 
 一般的に`/etc/nagios/`直下に置かれます。
 
@@ -300,7 +301,8 @@ https://github.com/paperboy-all/nagios-plugins
 
 ここみながら、あーだこーだ話す。
 
-[基盤チームが使っているnagiosの設定](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/files/etc/nagios/objects/kiban) [こっちも](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/templates/etc/nagios/objects/kiban)
+* [基盤チームが使っているnagiosの設定](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/files/etc/nagios/objects/kiban) 
+* [こっちも](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/templates/etc/nagios/objects/kiban)
 
 ----
 
