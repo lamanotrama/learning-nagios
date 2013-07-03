@@ -308,7 +308,9 @@ https://github.com/paperboy-all/nagios-plugins
 
 ## ウェブインターフェース
 
-ポチポチ押してたら、なんとなく分かります。
+Apacheをフロントエンドにしてるので、RPMを入れると勝手にconf.d/nagios.confが出来て、http://mydomain.com/nagios/ で見れるようになります。
+
+使い方はポチポチ押してたら、なんとなく分かります。
 
 ### よくやるオペレーション
 
