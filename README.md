@@ -1,4 +1,4 @@
-# nagiosとmuninの基礎
+# NagiosとMuninの基礎
 
 黒田 良
 
@@ -23,6 +23,13 @@ https://about-p-kitak.sqale.jp/users/45
 # Nagios
 
 何のための監視かは今日はもう説明しない。
+
+なぜ開発者がNagiosを学ぶのか？
+自分が作った物は自分で面倒見たいのが本音だろう。
+
+@kyanny さんがいいこと書いてる。
+[お願いします脳の恐怖](http://blog.kyanny.me/entry/2012/07/20/033411)
+
 
 ## サービスモニタリングフレームワーク
 
@@ -68,9 +75,9 @@ nagiosってなんすか?
 
 とりあえずコレを開いて置いてください。
 
-[基盤チームで使ってnagiosの設定](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/files/etc/nagios/objects/kiban)
+[基盤チームが使っているnagiosの設定](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/files/etc/nagios/objects/kiban) [こっちも](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/templates/etc/nagios/objects/kiban)
 
-あと自分のvmでnagiosをインストールしておいてください。
+あと自分のvm(port 80空いてるやつ)でnagiosをインストールしておいてください。
 
 ```
 sudo yum install nagios
@@ -106,7 +113,7 @@ sudo yum install nagios
 `/etc/nagios/objects/<サービス名>/{hoge.cfg,foo,cfg...}`
 
 * 便宜上オブジェクトタイプごとにファイルを分けているが、全て同じスコープ
-  * 極端な話、全部nagios.cfgに書いても動く
+  * 極端な話、全部単一のファイルに書いても動く
 * ファイル名は自由。関係ないことを設定してもOK
   * でも椅子は飛ぶ
 * サービスごとに階層を掘るのが吉
@@ -119,7 +126,7 @@ sudo yum install nagios
 覚えて欲しいのはこの4つ。
 普通は`<object-type>s.cfg` という名前のファイルにそれぞれを定義します。
 
-* group
+* hostgroup
 * host
 * service
 * command
@@ -170,12 +177,14 @@ hostオブジェクトは自前のスクリプトなどでよく自動生成さ�
 hostをなんか意味のある単位で束ねるのに使います。
 使わないってことも可能です。でもserviceオブジェクトで対象hostをいちいち全部並べるのはあほらしいので使います。
 
+hostgrouopを束ねたhostgroupというのも作れますが、あんまり使わないです。
+
 hostとgroupの関係は`host has many hostgroup`です。
 実は逆もできます。が、しかし。
 
 * 設定ファイルの見通しが悪くなる
 * 自動生成(後述)と相性が悪い
-* (酷い設定例を見せる)
+* (酷い設定例を見せる [今](http://ghe.tokyo.pb/heteml/nagios) [昔](https://github.com/paperboy-heteml/heteml-ops/tree/master/lamanotrama/historical_museum/nagios))
 
 なので、hostgoup has many hostは非推奨です。
 
@@ -185,6 +194,7 @@ hostとgroupの関係は`host has many hostgroup`です。
 * なにをする(何が動いている)ホストなのかはroleが決まっていれば自ずと決まる
 
 なので、hostは単一のhostgroupに属することが多いです。むやみにhostgroupを増やして、hostと紐付けるのは運用効率を著しく下げる為、NGです。
+
 ただし、役割で分類出来ない場合はマルチhostgroupを許容してします。
 例えばH/W構成。
 
@@ -198,10 +208,12 @@ hostgroups.cfgも一部のサービスでは自動生成してます。
 
 監視項目です。
 
-サービス名やプロセス名、サーバリソース名とかを名称(`service_description`アトリビュート)としてつけます。
+サービス名やプロセス名、サーバリソース名とかを名称(`service_description`アトリビュート)として付けます。
 service_descriptionはアラートに表示される(例えばメールのsubject)ので、他のオブジェクトのnameとくらべて、より人間がぱっと見で分かりやすいものにした方がいいです。
 
-* スペース可、コロン可。他の特殊ぽい字は避けた方が無難
+refs http://nagios.sourceforge.net/docs/nagioscore/3/en/objectdefinitions.html#service
+
+> may contain spaces, dashes, and colons (semicolons, apostrophes, and quotation marks should be avoided)
 
 監視対象はhostもしくはhostgroup(それぞれ復数可)、またはその二つの組み合わせで指定可能ですが、大抵はhostgroupだけでなんとかなります。hostをだらだら並べるような設定はクソなことがおおいです。
 
@@ -210,16 +222,11 @@ serviceオブジェクトは(他のobjectの`*_name`と違い)下記の2つの�
 * `service_description`
 * `host[group]_name`
 
-つまり、対象だけを変えてservice_descriptionは同じの沢山ってのはアリです。なので、例えば
+つまり、対象やcheck_comnnadだけを変えてservice_descriptionは同じの沢山ってのはアリです。なので、例えば
 「同じミドルウェアを監視するけど、こっちのroleでは厳密に監視するように(check_commandで定義)して、あっちの方は緩くしておく。」
 みたいなことが可能です。
 
-実は、hostやhostgroupオブジェクトの側で、serviceをひもづけることも可能なんですが、
-
-* 自動生成と相性がわるい
-* 同じservice_descriptionのserviceオブジェクトを使い分けれない
-
-という理由で非推奨です。
+<del>実は、hostやhostgroupオブジェクトの側で、serviceをひもづけることも可能なんですが、</del> うそ。出来なかったです。
 
 #### command
 
@@ -228,18 +235,18 @@ serviceオブジェクトは(他のobjectの`*_name`と違い)下記の2つの�
 commnad名(`command_name`)はserviceオブジェクトの`check_command`アトリビュートで指定され、serviceをどのcommandでチェックするのか、という関係を作ります。
 
 `command_line`に実際に実行するコマンドを書きます。
-コマンドのexit codeでステータス(OK|WARN|CRIT)を判別するので、コマンドワンライナーでもなんでもいいんですが、普通はnagiosプラグインを使います。
+コマンドのexit codeでステータス(OK|WARN|CRIT|UNKNOWN)を判別するので、コマンドワンライナーでもなんでもいいんですが、普通はnagiosプラグインを使います。
 
-serviceオブジェクトでcommandを指定する際には、任意個の引数も渡せる為、上手くcommnadを定義すれば、新規でやたらと定義を追加するってことを避けれます。
+serviceオブジェクトでcommandを指定する際には、引数(`!`区切りで最大32個)も渡せる為、上手くcommnadを定義すれば、新規でやたらと定義を追加するってことを避けれます。
 
 設定に出てくる`$USER1$`ってのはマクロです。pluginの入ったpathが入ってます。下記は使用頻度の高いマクロの一部です。
 
-* `$ARGN$`
+* `$ARG<N>$`
 * `$HOSTNAME$`
 * `$HOSTADDRESS$`
 
 他にも[一杯あります](http://nagios.sourceforge.net/docs/3_0/macrolist.html)。
-ARGはserviceオブジェクトから渡される引数で、それを更にプラグインへオプション引数として渡すときに使います。
+ARG<N>はserviceオブジェクトから渡される引数で、それを更にプラグインへオプション引数として渡すときに使います。
 あとの2つもプラグインへの引数としてどちらかをほぼ必ず使います。HOSTADDRESSよりはHOSTNAMEを使った方がベターです。HOSTNAMEを使うことで、名前引きのチェックにもなります。
 
 #### nrpe
@@ -248,7 +255,7 @@ command(のcommand_line)で`check_nrpe`というnagiosプラグインを使っ�
 
 例えば、メモリの残量なんかはリモートホスト上でfree叩くとか、/proc/meminfoを覗かないとわかんないですよね(snmpという手段もあるけど、あれ俺好きじゃない)。
 
-check_nrpeの引数で、対象ホストの`nrpe.cfg`で定義されているコマンドを指定します。実行結果(exit code)は普通のチェックコマンドと同様に解釈されます。また、コマンドだけでなく、引数もエージェントに渡すことが可能です。
+check_nrpeの引数で、対象ホストの`nrpe.cfg`(エージェントデーモン、nrpeの設定)で定義されているコマンドを指定します。実行結果(exit code)は普通のチェックコマンドと同様に解釈されます。また、コマンドだけでなく、引数もエージェントに渡すことが可能です。
 
 残メモリ監視のcommand設定例
 
@@ -266,6 +273,7 @@ command[check_mem]=/usr/lib64/nagios/plugins/check_mem -f -w $ARG1$ -c $ARG2$
 ```
 
 commandオブジェクトの方で、serrviceオブジェクトから受け取った閾値を、今度はcheck_nrpeに渡してします。それが最終的にnrpeのcommandとして定義されたcheck_memに渡されて実行されます。
+
 このように、nrpeを使った監視でも引数を上手く使うことで、設定をコンパクトに保つことができます。
 
 
@@ -277,7 +285,7 @@ RPMで入る標準pluginはここにあります。
 /usr/lib[64]/nagios/plugins/
 ```
 
-ここに無いものは`yum search nagios-plugins`したり、[Nagios Exchange](http://exchange.nagios.org/)で適当なキーワードで検索したりして、それっぽいのが無いか探します。
+ここに無いものは`yum search nagios-plugins`したり、[Nagios Exchange](http://exchange.nagios.org/)で適当なキーワードで検索したりして、それっぽいものが無いか探します。
 
 それでも無かったら、自作。
 ペパボで自前で作ったやつはここに集めてます。
@@ -292,7 +300,7 @@ https://github.com/paperboy-all/nagios-plugins
 
 ここみながら、あーだこーだ話す。
 
-[基盤チームで使ってnagiosの設定](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/files/etc/nagios/objects/kiban)
+[基盤チームが使っているnagiosの設定](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/files/etc/nagios/objects/kiban) [こっちも](https://github.com/paperboy-all/kiban-puppet/tree/master/modules/nagios/templates/etc/nagios/objects/kiban)
 
 ----
 
@@ -344,6 +352,8 @@ http://d.hatena.ne.jp/lamanotrama/20120618/1339988584
 http://shoichimasuhara.hatenablog.com/entry/2013/03/11/184422
 
 ## 参考資料
+
+[本家ドキュメントサイト](http://nagios.sourceforge.net/docs/nagioscore/3/en/toc.html)
 
 [Nagios統合監視[実践]リファレンス](http://www.amazon.co.jp/Nagios%E7%B5%B1%E5%90%88%E7%9B%A3%E8%A6%96-%E3%83%AA%E3%83%95%E3%82%A1%E3%83%AC%E3%83%B3%E3%82%B9-Software-Design-%EF%BD%90lus/dp/4774145823)
 
